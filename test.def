@@ -1,0 +1,21 @@
+Bootstrap: docker
+From:nvidia/cuda:11.5.1-devel-ubuntu20.04
+
+%post
+#    apt update
+#    apt upgrade
+    apt install curl
+
+# Configure Miniconda
+#    export MINICONDA_VER=latest MINICONDA=Miniconda3-$MINICONDA_VER-Linux-x86_64.sh MINICONDA_URL=https://repo.continuum.io/miniconda/$MINICONDA
+
+## Create nbuser user with UID=1000 and in the 'users' group
+#    mkdir -p /opt/conda && \
+#    curl -L $MINICONDA_URL  -o miniconda.sh && \
+#    /bin/bash miniconda.sh -f -b -p /opt/conda && \
+#    rm miniconda.sh && \
+#    /opt/conda/bin/conda install --yes conda && \
+#    ln -s /opt/conda/bin/conda /usr/bin/conda && \
+#    conda clean --yes --all && \
+#    rm -rf /var/cache/apk/*
+
