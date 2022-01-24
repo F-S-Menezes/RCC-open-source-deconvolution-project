@@ -2,7 +2,7 @@
 import os
 
 import numpy as np
-from pims import ND2_Reader
+from nd2reader import ND2Reader
 from skimage.io import imsave
 
 from pycudadecon.affine import affineGPU
@@ -26,7 +26,7 @@ def deskew_file(path, tmat=DEFAULT_TMAT, mip=True):
     fname, ext = os.path.splitext(fname)
     outdir = os.path.join(dirname, fname + "_deskewed")
     os.makedirs(outdir, exist_ok=True)
-    with ND2_Reader(path) as frames:
+    with ND2Reader(path) as frames:
         frames.bundle_axes = "czyx"
         for frame in frames:
             print(f"processing frame: {frame.frame_no + 1:4} of {len(frames)}")

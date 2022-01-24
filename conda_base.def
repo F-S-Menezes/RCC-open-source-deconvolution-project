@@ -1,0 +1,6 @@
+Bootstrap: docker
+From:continuumio/miniconda3
+
+%post
+     conda install -c conda-forge pycudadecon cudatoolkit=10.2
+     conda install -c conda-forge scikit-image nd2reader

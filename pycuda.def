@@ -1,8 +1,0 @@
-Bootstrap: docker
-From:continuumio/miniconda3
-
-%post
-     conda install -c conda-forge pycudadecon
-     conda install -c conda-forge pims
-     conda install scikit-image
-     pip install pims_nd2

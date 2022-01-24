@@ -1,0 +1,27 @@
+Bootstrap: docker
+From:nvidia/cuda:11.5.1-devel-ubuntu18.04
+
+%files
+#    /pvol/Miniconda3-py39_4.10.3-Linux-x86_64.sh maybe.sh
+
+%environment
+    export PATH=$PATH:/opt/conda/bin
+
+%post
+    apt-get update -y
+    apt-get upgrade -y
+    apt-get install -y curl
+
+#install conda
+    mkdir -p /opt/conda
+    curl -L https://repo.anaconda.com/miniconda/Miniconda3-py39_4.10.3-Linux-x86_64.sh -o miniconda.sh
+    /bin/bash miniconda.sh -f -b -p /opt/conda
+    rm miniconda.sh
+    /opt/conda/bin/conda install --yes conda
+    ln -s /opt/conda/bin/conda /usr/bin/conda
+    conda clean --yes --all
+    rm -rf /var/cache/apk/*
+
+#install pycudadecon and dependencies required for deskew test
+    conda install -c conda-forge pycudadecon cudatoolkit
+    conda install -c conda-forge scikit-image nd2reader
