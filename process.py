@@ -15,20 +15,27 @@ def json_parser(args):
 	raw = open(args.json, 'r')
 	parms= json.load(raw)
 	
-	args.dxdata = parms['pixelWidth']
+###values that get over-written
+	
+	args.dxdata = max(parms['pixelWidth'], parms['pixelHeight'])
 	args.dzdata = parms['pixelDepth']
 	args.angle = parms['angle']
 	args.otf_xy =  parms['psfDr'] 
 	args.otf_z = parms['psfZ']
 	args.background = parms['background']
-	args.deskew = False if parms['Deskew']=="false" else True
-	args.keep_deskew = False if parms['keepDeskew']=="false" else True
+
+##comment out the above if testing using default values
+
+	args.deskew = parms['deskew']
+	args.keep_deskew = parms['keepDeskew']
 	args.destination = parms['outputPath']
 	args.psf = parms['psfFile']
-	args.folder = parms['path']
+	if parms['isfolder']:
+		args.folder = parms['path']
+	else:
+		args.files = [parms['path']]
+		
 	main(args)
-	
-	###################WRITE README, should contain all important notes about the program as well as singularity images##################
 	
 def process_tiff(tiff, args):
 	"""deconvolutes or only deskews a single tiff file, if otf was created by this process, deconvolutes using that otf, or an otf specified by --otf, or otheriwse by a file in $PWD named 'otf.tif'.
@@ -50,6 +57,8 @@ def process_tiff(tiff, args):
 	
 	if args.deskew==False: ##file is not deskewed, deskew before deconvolution
 		deskewed = deskewGPU(im, dxdata=args.dxdata, dzdata=args.dzdata, angle=args.angle)
+	else:
+		deskewed = im
 	
 	if args.keep_deskew==True: ##deskewed file is to be saved seperately
 		imsave(f"{args.destination}/{fname}_deskewed.tiff", deskewed, imagej=True)
@@ -63,8 +72,9 @@ def process_tiff(tiff, args):
 	
 	rl_init(deskewed.shape, f"{otf_source}",dzdata=args.dzdata, dxdata=args.dxdata, dzpsf=args.otf_z, dxpsf=args.otf_xy)
 	deconvolved = rl_decon(deskewed, background=args.background)
-	imsave(f"{args.destination}/{fname}_deconvolved.tiff", deconvolved, imagej=True)
 	rl_cleanup()
+	imsave(f"{args.destination}/{fname}_deconvolved.tiff", deconvolved, imagej=True)
+	
 	
 def process_folder(args):
 	"""looks in the folder given as part of args.folder for files matching the pattern at the end.
@@ -81,7 +91,7 @@ def process_folder(args):
 			process_tiff(tiff, args)
 	
 def main(args):
-	"""sets up the destination folder for processed images, other functionality requires at least one option to be set:x
+	"""sets up the destination folder for processed images, other functionality requires at least one option to be set
 	"""
 		
 	if args.destination is not None and args.files is not None:
