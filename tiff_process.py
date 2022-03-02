@@ -1,69 +1,98 @@
 from pathlib import Path
-import numpy as np
 from skimage.io import imsave,imread
 import os, sys, argparse, json, glob
 
-from pycudadecon.affine import deskewGPU
-from pycudadecon import decon, rl_cleanup, rl_decon, rl_init, make_otf
-#from pycudadecon.util import imread
+from pycudadecon import decon, rl_cleanup, rl_decon, rl_init, make_otf, deskewGPU
 
 def json_parser(args):
-	"""parses a json file as text and runs a custom operation according to it
+	"""parses a json file as text and runs a custom operation according to it.
+	
+	ANY OTHER SET OPTIONS WILL BE IGNORED
+	
+	REQUIRED OPTIONS TO BE SET:
+		--json
 	"""
 	raw = open(args.json, 'r')
 	parms= json.load(raw)
+	
 	args.dxdata = parms['pixelWidth']
 	args.dzdata = parms['pixelDepth']
 	args.angle = parms['angle']
-#	args.otf_xy =   ######
+	args.otf_xy =  parms['psfDr'] 
 	args.otf_z = parms['psfZ']
 	args.background = parms['background']
-	args.deskew = False if parms['keepDeskew']=="false" else True
+	args.deskew = False if parms['Deskew']=="false" else True
+	args.keep_deskew = False if parms['keepDeskew']=="false" else True
 	args.destination = parms['outputPath']
 	args.psf = parms['psfFile']
-	args.folder = parms['path'] ######
+	args.folder = parms['path']
 	main(args)
 	
+	###################WRITE README, should contain all important notes about the program as well as singularity images##################
+	
 def process_tiff(tiff, args):
-	"""###########################################
+	"""deconvolutes or only deskews a single tiff file, if otf was created by this process, deconvolutes using that otf, or an otf specified by --otf, or otheriwse by a file in $PWD named 'otf.tif'.
+	
+	--otf will be ignored if --psf was used
+	
+	PARAMETERS:
+	tiff (string): path to a single tif/tiff file
+	args (argparse.namespace): argparser structure
+	
+	REQUIRED OPTIONS TO BE SET:
+		at least one of --files or --folder
 	"""
-	##rip options from pycudadecon.deskewGPU
 
-	im = imread(tiff)
-	deskewed = deskewGPU(im, dxdata=args.options['dxdata'], dzdata=args.options['dzdata'], angle=args.options['angle'])
-	
 	dirname, fname = os.path.split(tiff)
-	fname, ext = os.path.splitext(fname)
+	fname, ext = os.path.splitext(fname) ##store the filename
 	
-	if not args.deskew:
-		rl_init(deskewed.shape, "otf.tif",dzdata=args.options['dzdata'], dxdata=args.options['dxdata'], dzpsf=args.options['otf_z'], dxpsf=args.options['otf_xy'])
-		deconvolved = rl_decon(deskewed, background=args.options['background'])
-		imsave(f"{args.destination}/{fname}_deconvolved.tiff", deconvolved, imagej=True)
-		rl_cleanup()
-	else:
+	im = imread(tiff)
+	
+	if args.deskew==False: ##file is not deskewed, deskew before deconvolution
+		deskewed = deskewGPU(im, dxdata=args.dxdata, dzdata=args.dzdata, angle=args.angle)
+	
+	if args.keep_deskew==True: ##deskewed file is to be saved seperately
 		imsave(f"{args.destination}/{fname}_deskewed.tiff", deskewed, imagej=True)
+		
+	if args.psf is not None:
+		otf_source = f"{args.destination}/otf.tif"
+	elif args.otf is not None:
+		otf_source = args.otf
+	else:
+		otf_source = "otf.tif"
+	
+	rl_init(deskewed.shape, f"{otf_source}",dzdata=args.dzdata, dxdata=args.dxdata, dzpsf=args.otf_z, dxpsf=args.otf_xy)
+	deconvolved = rl_decon(deskewed, background=args.background)
+	imsave(f"{args.destination}/{fname}_deconvolved.tiff", deconvolved, imagej=True)
+	rl_cleanup()
 	
 def process_folder(args):
-	"""############################################
+	"""looks in the folder given as part of args.folder for files matching the pattern at the end.
+	SKIPS FILES ENDING IN otf
+	
+	REQUIRED OPTIONS TO BE SET:
+		--folder
 	"""
-	for tiff in glob.glob(args.folder) and not in glob.glob('*otf.tif?'):
-		print(tiff)
-#		process_tiff(tiff,args)
+	valid = glob.glob(args.folder)
+	skip = glob.glob('/*/*otf.tif*') #skips both .tif and .tiff
+	
+	for tiff in valid:
+		if tiff not in skip:
+			process_tiff(tiff, args)
 	
 def main(args):
-	"""#####################################################
-	
+	"""sets up the destination folder for processed images, other functionality requires at least one option to be set:x
 	"""
-	if args.psf is not None:
-		make_otf(args.psf, "otf.tif")
 		
 	if args.destination is not None and args.files is not None:
 		os.makedirs(f"{args.destination}/pycudadecon_output", exist_ok=True)
 		args.destination = f"{args.destination}/pycudadecon_output"
 	else:
 		os.makedirs("pycudadecon_output", exist_ok=True)
-		args.destination = "/pycudadecon_output"
+		args.destination = "pycudadecon_output"
 		
+	if args.psf is not None:
+		make_otf(args.psf, "pycudadecon_output/otf.tif", dzpsf=args.otf_z, dxpsf=args.otf_xy)
 		
 	if args.files is not None:
 		for tiff in args.files:
@@ -79,8 +108,10 @@ if __name__ == "__main__":
 	parser.add_argument('-t', '--files', nargs='+')
 	parser.add_argument('-f', '--folder', help='path_to_folder/pattern, needs to be a string')
 	parser.add_argument('-p', '--psf')
+	parser.add_argument('-o', '--otf')
 	parser.add_argument('-j', '--json')
-	parser.add_argument('--deskew', action='store_true', help='if set, deskews the data only')
+	parser.add_argument('--deskew', action='store_true', help='if set, program will assume files have already been deskewed')
+	parser.add_argument('--keep_deskew', action='store_true', help='if set, program will also save the deskewed image before deconvolution')
 	parser.add_argument('-d', '--destination', help='where to store the file that will contain the processed images')
 	parser.add_argument('--dxdata', default = 0.1)
 	parser.add_argument('--dzdata', default = 0.5)
