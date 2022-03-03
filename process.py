@@ -94,7 +94,7 @@ def main(args):
 	"""sets up the destination folder for processed images, other functionality requires at least one option to be set
 	"""
 		
-	if args.destination is not None and args.files is not None:
+	if args.destination is not None:
 		os.makedirs(f"{args.destination}/pycudadecon_output", exist_ok=True)
 		args.destination = f"{args.destination}/pycudadecon_output"
 	else:
