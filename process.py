@@ -17,7 +17,7 @@ def json_parser(args):
 	
 ###values that get over-written
 	
-	args.dxdata = max(parms['pixelWidth'], parms['pixelHeight'])
+	args.dxdata = parms['pixelWidth']
 	args.dzdata = parms['pixelDepth']
 	args.angle = parms['angle']
 	args.otf_xy =  parms['psfDr'] 
@@ -95,8 +95,9 @@ def main(args):
 	"""
 		
 	if args.destination is not None:
-		os.makedirs(f"{args.destination}/pycudadecon_output", exist_ok=True)
-		args.destination = f"{args.destination}/pycudadecon_output"
+#		os.makedirs(f"{args.destination}/pycudadecon_output", exist_ok=True)
+#		args.destination = f"{args.destination}/pycudadecon_output"
+		pass #functionality change, residual code left in case coder desires to revert
 	else:
 		os.makedirs("pycudadecon_output", exist_ok=True)
 		args.destination = "pycudadecon_output"
@@ -122,7 +123,7 @@ if __name__ == "__main__":
 	parser.add_argument('-j', '--json')
 	parser.add_argument('--deskew', action='store_true', help='if set, program will assume files have already been deskewed')
 	parser.add_argument('--keep_deskew', action='store_true', help='if set, program will also save the deskewed image before deconvolution')
-	parser.add_argument('-d', '--destination', help='where to store the file that will contain the processed images')
+	parser.add_argument('-d', '--destination', help='specify an alternate destination for processed images besides $PWD/pycudadecon_output/')
 	parser.add_argument('--dxdata', default = 0.1)
 	parser.add_argument('--dzdata', default = 0.5)
 	parser.add_argument('--angle', default = 31.5)
@@ -135,5 +136,5 @@ if __name__ == "__main__":
 	if args.json is not None:
 		json_parser(args)
 	else:
-		main(args)
 
+		main(args)
