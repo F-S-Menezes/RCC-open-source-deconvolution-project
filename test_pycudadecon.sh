@@ -18,7 +18,7 @@ printf "test single file processing"
 singularity exec --nv /scratch/rcc/uqfmenze/conda_base.sif python3 tiff_process.py -t  /scratch/rcc/uqfmenze/1test.tiff --otf pycudadecon_output/otf.tif
 
 printf "test folder processing"
-singularity exec --nv /scratch/rcc/uqfmenze/conda_base.sif python3 tiff_process.py -f '/scratch/rcc/uqfmenze/test-data/*.tiff' --otf pycudadecon_output/otf.tif --deskew
+singularity exec --nv /scratch/rcc/uqfmenze/conda_base.sif python3 tiff_process.py -f '/scratch/rcc/uqfmenze/test-data/*.tiff' --otf pycudadecon_output/otf.tif
 
 printf "finished conda_base tests, beginning nvidia_base tests "
 
@@ -29,6 +29,6 @@ printf "test single file processing"
 singularity exec --nv /scratch/rcc/uqfmenze/nvidia_base.sif python3 tiff_process.py -t  /scratch/rcc/uqfmenze/1test.tiff --otf pycudadecon_output/otf.tif
 
 printf "test folder processing"
-singularity exec --nv /scratch/rcc/uqfmenze/nvidia_base.sif python3 tiff_process.py -f '/scratch/rcc/uqfmenze/test-data/*.tiff' --otf pycudadecon_output/otf.tif --deskew
+singularity exec --nv /scratch/rcc/uqfmenze/nvidia_base.sif python3 tiff_process.py -f '/scratch/rcc/uqfmenze/test-data/*.tiff' --otf pycudadecon_output/otf.tif
 
 printf "finished all tests"
